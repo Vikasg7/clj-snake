@@ -114,9 +114,10 @@
   (if ate? (pick-rand-pos rows cols) food))
 
 (defn grow [{:keys [ate? snake] :as state} direction]
-  (let [nhead (add-vec (head snake) (direction->offset direction))]
-  (cond ate?  (cons nhead snake)
-        :else (cons nhead (butlast snake)))))
+  (let [nhead (add-vec (head snake) (direction->offset direction))
+        snake (cons nhead snake)]
+  (cond ate?  snake
+        :else (butlast snake))))
 
 (defn update-state [state direction]
   (-> state
