@@ -66,10 +66,9 @@
       (op/startWithItem \d)
       (op/filter #{\w \a \s \d})
       (op/scan filter-opposite)
-      (op/distinctUntilChanged)
       (op/compose to-async)))
 
-(def direction->offset
+(def offset
   {\w [-1 0]
    \a [0 -1]
    \s [1 0]
@@ -107,21 +106,21 @@
                    (join "\n"))]
   (println (str "\033[H\033[2J" frame))))
 
-(defn ate? [{:keys [food snake] :as state}]
+(defn ate? [food snake]
   (= food (head snake)))
 
-(defn food [{:keys [ate? food rows cols] :as state}]
-  (if ate? (pick-rand-pos rows cols) food))
+(defn food [{:keys [food snake rows cols] :as state}]
+  (if (ate? food snake) (pick-rand-pos rows cols) food))
 
-(defn grow [{:keys [ate? snake] :as state} direction]
-  (let [nhead (add-vec (head snake) (direction->offset direction))
-        snake (cons nhead snake)]
+(defn grow [{:keys [food snake] :as state} direction]
+  (let [nhead (add-vec (head snake) (offset direction))
+        snake (cons nhead snake)
+        ate?  (ate? food snake)]
   (cond ate?  snake
         :else (butlast snake))))
 
 (defn update-state [state direction]
   (-> state
-      (assoc :ate?  (ate? state))
       (assoc :snake (grow state direction))
       (assoc :food  (food state))))
 
@@ -137,8 +136,8 @@
   (-> directions
       (repeat-latest-on-interval speed TimeUnit/MILLISECONDS)
       (op/scan initial update-state)
-      (op/takeUntil game-over?))))
+      (op/takeWhile (comp not game-over?)))))
 
 (defn -main [& args]
-  (-> (snake-game 15 25 400)
+  (-> (snake-game 15 25 500)
       (op/blockingSubscribe print-frame identity)))
