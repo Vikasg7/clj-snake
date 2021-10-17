@@ -38,8 +38,8 @@
                 (let [dsp (atom (Disposable/empty))
                       nxt (fn nxt [value]
                             (when (not (.isDisposed e))
-                              (.onNext e value)
                               (.dispose ^Disposable @dsp)
+                              (.onNext e value)
                               (reset! dsp (.scheduleDirect scheduler (fns/runnable #(nxt value)) delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
