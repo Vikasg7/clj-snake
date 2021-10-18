@@ -7,7 +7,8 @@
                  [org.clojars.vikasg7/rx-clojure "0.1.3-SNAPSHOT"]
                  [org.jline/jline-reader "3.20.0"]
                  [org.jline/jline-terminal-jansi "3.20.0"]
-                 [org.clojure/core.match "1.0.0"]]
+                 [org.clojure/core.match "1.0.0"]
+                 [org.clojure/tools.cli "1.0.206"]]
   :main ^:skip-aot clj-snake.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all

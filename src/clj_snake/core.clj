@@ -4,7 +4,8 @@
   (:require [rx-clojure.statics   :as rx]
             [rx-clojure.operators :as op]
             [clojure.core.match :refer [match]]
-            [clojure.string :refer [join]])
+            [clojure.string :refer [join]]
+            [clojure.tools.cli :refer [parse-opts]])
   (:use [clj-snake.utils]))
 
 (set! *warn-on-reflection* true)
@@ -21,6 +22,9 @@
   (-> Observable (rx/fromIterable (repeatedly key-inputs))
       (op/startWithItem \d)
       (op/filter #{\w \a \s \d})
+      ;; un-comment this line to make snake NOT dash forward
+      ;; while holding the key down
+      ;; (op/distinctUntilChanged) 
       (op/scan filter-opposite)
       (op/compose to-async)))
 
@@ -56,11 +60,13 @@
           (= [r c] food)     "#"
           :else              "."))))
 
-(defn print-frame [state]
+(defn print-frame [{:keys [rows cols] :as state}]
   (let [frame (->> (make-frame state)
                    (mapv (partial join " "))
                    (join "\n"))]
-  (println (str "\033[H\033[2J" frame))))
+  (println (str "\033[" (str rows) "A"
+                "\033[" (str cols) "D" 
+                frame))))
 
 (defn ate? [food snake]
   (= food (head snake)))
@@ -93,6 +99,28 @@
       (op/scan initial update-state)
       (op/takeWhile (comp not game-over?)))))
 
+(def cli-options
+  [["-r" "--rows" "No. of Rows in the Grid"
+    :default 15
+    :parse-fn #(Integer/parseInt %)]
+   ["-c" "--cols" "No. of Cols in the Grid"
+    :default 30
+    :parse-fn #(Integer/parseInt %)]
+   ["-d" "--delay-in-ms" "Delay between each frame in milliseconds"
+    :default 250
+    :parse-fn #(Integer/parseInt %)]
+   ["-h" "--help"]])
+
+(defn run-game [{:keys [rows cols delay-in-ms]}]
+  (-> (snake-game rows cols delay-in-ms)
+      (op/blockingSubscribe print-frame println)))
+
 (defn -main [& args]
-  (-> (snake-game 15 25 500)
-      (op/blockingSubscribe print-frame identity)))
+  (let [{:keys [options
+                arguments
+                errors
+                summary]} (parse-opts args cli-options)]
+  (cond (:help options) (println summary)
+        (some? errors)  (println summary "\n\n" (join "\n" errors))
+        :else           (run-game options))))
+
