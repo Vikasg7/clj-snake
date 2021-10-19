@@ -100,13 +100,13 @@
       (op/takeWhile (comp not game-over?)))))
 
 (def cli-options
-  [["-r" "--rows" "No. of Rows in the Grid"
+  [["-r" "--rows ROWS" "No. of Rows in the Grid"
     :default 15
     :parse-fn #(Integer/parseInt %)]
-   ["-c" "--cols" "No. of Cols in the Grid"
+   ["-c" "--cols COLS" "No. of Cols in the Grid"
     :default 30
     :parse-fn #(Integer/parseInt %)]
-   ["-d" "--delay-in-ms" "Delay between each frame in milliseconds"
+   ["-d" "--delay-in-ms DELAY IN MILLISECONDS" "Delay between each frame in milliseconds"
     :default 250
     :parse-fn #(Integer/parseInt %)]
    ["-h" "--help"]])

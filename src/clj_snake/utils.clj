@@ -40,7 +40,7 @@
                             (when (not (.isDisposed e))
                               (.dispose ^Disposable @dsp)
                               (.onNext e value)
-                              (reset! dsp (.scheduleDirect scheduler (fns/runnable #(nxt value)) delay unit))))
+                              (reset! dsp (.schedulePeriodicallyDirect scheduler (fns/runnable #(.onNext e value)) delay delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
                             (.onError e error))
