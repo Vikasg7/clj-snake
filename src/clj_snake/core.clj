@@ -23,7 +23,7 @@
       (op/startWithItem \d)
       (op/filter #{\w \a \s \d})
       ;; un-comment this line to make snake NOT dash forward
-      ;; while holding the key down
+      ;; while holding the direction keys down
       ;; (op/distinctUntilChanged) 
       (op/scan filter-opposite)
       (op/compose to-async)))
@@ -89,7 +89,7 @@
 (defn initial-state [rows cols]
   {:rows  rows
    :cols  cols
-   :snake [[0 1] [0 0]] ;; First element is snake head.
+   :snake (reverse [[0 0] [0 1] [0 2]]) ;; First element is snake head.
    :food  (pick-rand-pos rows cols)})
 
 (defn snake-game [rows cols speed]
@@ -107,7 +107,7 @@
     :default 30
     :parse-fn #(Integer/parseInt %)]
    ["-d" "--delay-in-ms DELAY IN MILLISECONDS" "Delay between each frame in milliseconds"
-    :default 250
+    :default 500
     :parse-fn #(Integer/parseInt %)]
    ["-h" "--help"]])
 
@@ -121,6 +121,6 @@
                 errors
                 summary]} (parse-opts args cli-options)]
   (cond (:help options) (println summary)
-        (some? errors)  (println summary "\n\n" (join "\n" errors))
+        (some? errors)  (println (str summary "\n\n" (join "\n" errors)))
         :else           (run-game options))))
 
