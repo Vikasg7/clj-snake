@@ -58,7 +58,7 @@
   (for [c (range cols)]
     (cond (has? snake [r c]) "O"
           (= [r c] food)     "#"
-          :else              "."))))
+          :else              "-"))))
 
 (defn print-frame [{:keys [rows cols] :as state}]
   (let [frame (->> (make-frame state)
