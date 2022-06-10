@@ -6,8 +6,7 @@
            [io.reactivex.rxjava3.disposables Disposable]
            [java.util Collection])
   (:require [rx-clojure.statics   :as rx]
-            [rx-clojure.operators :as op]
-            [rx-clojure.functions :as fns]))
+            [rx-clojure.operators :as op]))
 
 (set! *warn-on-reflection* true)
 
@@ -41,7 +40,7 @@
                             (when (not (.isDisposed e))
                               (reset! prv value)
                               (.dispose ^Disposable @dsp)
-                              (reset! dsp (.schedulePeriodicallyDirect scheduler (fns/runnable #(.onNext e @prv)) 0 delay unit))))
+                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) 0 delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
                             (.onError e error))
