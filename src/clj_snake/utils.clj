@@ -6,7 +6,8 @@
            [io.reactivex.rxjava3.disposables Disposable]
            [java.util Collection])
   (:require [rx-clojure.statics   :as rx]
-            [rx-clojure.operators :as op]))
+            [rx-clojure.operators :as op]
+            [rx-clojure.functions :as fns]))
 
 (set! *warn-on-reflection* true)
 
@@ -18,11 +19,19 @@
 (defn char-reader ^BindingReader [^Terminal terminal]
   (BindingReader. (-> terminal .reader)))
 
-(def ^BindingReader key-reader (char-reader (terminal)))
+(def ^Terminal      terminal   (terminal))
+(def ^BindingReader key-reader (char-reader terminal))
 
-(defn key-inputs []
+(defn poll-key []
   (flush)
   (-> key-reader .readCharacter char))
+
+(defn key-events []
+  (let [sub (fn [^ObservableEmitter e]
+              (let [f (future (while (not (.isDisposed e))
+                                (.onNext e (poll-key))))]
+              (.setCancellable e (fns/cancellable #(future-cancel f)))))]
+    (-> Observable (rx/create sub))))
 
 (defn to-async [source]
   (-> source
@@ -35,19 +44,17 @@
   ([source delay unit ^Scheduler scheduler]
     (let [sub (fn [^ObservableEmitter e]
                 (let [dsp (atom (Disposable/empty))
-                      prv (atom nil)
-                      nxt (fn nxt [value]
+                      nxt (fn nxt [val]
                             (when (not (.isDisposed e))
-                              (reset! prv value)
                               (.dispose ^Disposable @dsp)
-                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) 0 delay unit))))
+                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e val) 0 delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
                             (.onError e error))
                       com (fn com []
                             (.dispose ^Disposable @dsp)
                             (.onComplete e))]
-                (-> source (op/subscribe nxt err com))))]
+                (.setDisposable e (-> source (op/subscribe nxt err com)))))]
     (-> Observable (rx/create sub)))))
 
 (defn has? [^Collection coll val]

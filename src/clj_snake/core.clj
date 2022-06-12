@@ -18,8 +18,8 @@
     [\d \a] \d
     :else   curr))
 
-(def directions
-  (-> Observable (rx/fromIterable (repeatedly key-inputs))
+(defn directions []
+  (-> (key-events)
       (op/startWithItem \d)
       (op/filter #{\w \a \s \d})
       ;; un-comment this line to make snake NOT dash forward
@@ -94,10 +94,16 @@
 
 (defn snake-game [rows cols speed]
   (let [initial (initial-state rows cols)]
-  (-> directions
+  (-> (directions)
       (repeat-latest-on-interval speed TimeUnit/MILLISECONDS)
       (op/scan initial update-state)
       (op/takeWhile (comp not game-over?)))))
+
+(defn run-game [{:keys [rows cols delay-in-ms] :as options}]
+  (-> (snake-game rows cols delay-in-ms)
+      (op/blockingSubscribe print-frame
+                            println
+                            #(run-game options))))
 
 (def cli-options
   [["-r" "--rows ROWS" "No. of Rows in the Grid"
@@ -110,10 +116,6 @@
     :default 500
     :parse-fn #(Integer/parseInt %)]
    ["-h" "--help"]])
-
-(defn run-game [{:keys [rows cols delay-in-ms]}]
-  (-> (snake-game rows cols delay-in-ms)
-      (op/blockingSubscribe print-frame println)))
 
 (defn -main [& args]
   (let [{:keys [options
