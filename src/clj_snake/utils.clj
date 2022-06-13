@@ -30,7 +30,7 @@
   (let [sub (fn [^ObservableEmitter e]
               (let [f (future (while (not (.isDisposed e))
                                 (.onNext e (poll-key))))]
-              (.setCancellable e (fns/cancellable #(future-cancel f)))))]
+              #(future-cancel f)))]
     (-> Observable (rx/create sub))))
 
 (defn to-async [source]
@@ -54,7 +54,7 @@
                       com (fn com []
                             (.dispose ^Disposable @dsp)
                             (.onComplete e))]
-                (.setDisposable e (-> source (op/subscribe nxt err com)))))]
+                (-> source (op/subscribe nxt err com))))]
     (-> Observable (rx/create sub)))))
 
 (defn has? [^Collection coll val]
