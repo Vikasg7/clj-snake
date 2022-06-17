@@ -1,4 +1,5 @@
 (ns clj-snake.core
+  (:gen-class)
   (:import [io.reactivex.rxjava3.core Observable]
            [java.util.concurrent TimeUnit])
   (:require [rx-clojure.statics   :as rx]
