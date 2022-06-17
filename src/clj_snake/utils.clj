@@ -44,10 +44,12 @@
   ([source delay unit ^Scheduler scheduler]
     (let [sub (fn [^ObservableEmitter e]
                 (let [dsp (atom (Disposable/empty))
+                      prv (atom nil)
                       nxt (fn nxt [val]
                             (when (not (.isDisposed e))
                               (.dispose ^Disposable @dsp)
-                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e val) 0 delay unit))))
+                              (reset! prv val)
+                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) 0 delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
                             (.onError e error))
