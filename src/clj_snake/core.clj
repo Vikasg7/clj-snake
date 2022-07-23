@@ -25,7 +25,7 @@
       (op/filter #{\w \a \s \d})
       ;; un-comment this line to make snake NOT dash forward
       ;; while holding the direction keys down
-      ;; (op/distinctUntilChanged) 
+      ;; (op/distinctUntilChanged)
       (op/scan filter-opposite)
       (op/compose to-async)))
 
@@ -100,11 +100,19 @@
       (op/scan initial update-state)
       (op/takeWhile (comp not game-over?)))))
 
+;; Version with 60 FPS
+;; (defn snake-game [rows cols speed]
+;;   (let [initial (initial-state rows cols)
+;;         snake   (-> (directions)
+;;                     (repeat-latest-on-interval speed TimeUnit/MILLISECONDS)
+;;                     (op/scan initial update-state))]
+;;   (-> Observable (rx/interval (/ 1000 60) TimeUnit/MILLISECONDS)
+;;       (op/withLatestFrom snake (comp second vector))
+;;       (op/takeWhile (comp not game-over?)))))
+
 (defn run-game [{:keys [rows cols delay-in-ms] :as options}]
   (-> (snake-game rows cols delay-in-ms)
-      (op/blockingSubscribe print-frame
-                            println
-                            #(run-game options))))
+      (op/blockingSubscribe print-frame println #())))
 
 (def cli-options
   [["-r" "--rows ROWS" "No. of Rows in the Grid"

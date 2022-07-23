@@ -1,3 +1,3 @@
 @echo off
-lein trampoline run -d 350
+lein trampoline run -d 500
 pause

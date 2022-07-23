@@ -48,8 +48,9 @@
                       nxt (fn nxt [val]
                             (when (not (.isDisposed e))
                               (.dispose ^Disposable @dsp)
+                              (.onNext e val)
                               (reset! prv val)
-                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) 0 delay unit))))
+                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) delay delay unit))))
                       err (fn err [error]
                             (.dispose ^Disposable @dsp)
                             (.onError e error))
