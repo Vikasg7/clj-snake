@@ -1,15 +1,8 @@
 (ns clj-snake.utils
+  (:require [clojure.core.async :as async])
   (:import [org.jline.terminal TerminalBuilder Terminal]
            [org.jline.keymap   BindingReader]
-           [io.reactivex.rxjava3.core Observable Scheduler ObservableEmitter]
-           [io.reactivex.rxjava3.schedulers Schedulers]
-           [io.reactivex.rxjava3.disposables Disposable]
-           [java.util Collection])
-  (:require [rx-clojure.statics   :as rx]
-            [rx-clojure.operators :as op]
-            [rx-clojure.functions :as fns]))
-
-(set! *warn-on-reflection* true)
+           [java.util Collection]))
 
 (defn terminal ^Terminal []
   (-> (TerminalBuilder/builder)
@@ -19,55 +12,28 @@
 (defn char-reader ^BindingReader [^Terminal terminal]
   (BindingReader. (-> terminal .reader)))
 
-(def ^Terminal      terminal   (terminal))
-(def ^BindingReader key-reader (char-reader terminal))
+(def ^BindingReader key-reader (char-reader (terminal)))
 
-(defn poll-key []
-  (flush)
-  (-> key-reader .readCharacter char))
+(defn poll-keys [dst]
+  (async/go (while true
+    (flush)
+    (async/>!! dst (-> key-reader .readCharacter char)))))
 
-(defn key-events []
-  (let [sub (fn [^ObservableEmitter e]
-              (let [f (future (while (not (.isDisposed e))
-                                (.onNext e (poll-key))))]
-              #(future-cancel f)))]
-    (-> Observable (rx/create sub))))
-
-(defn to-async [source]
-  (-> source
-      (op/subscribeOn (Schedulers/io))
-      (op/observeOn (Schedulers/single))))
-
-(defn repeat-latest-on-interval 
-  ([source delay unit]
-    (repeat-latest-on-interval source delay unit (Schedulers/io)))
-  ([source delay unit ^Scheduler scheduler]
-    (let [sub (fn [^ObservableEmitter e]
-                (let [dsp (atom (Disposable/empty))
-                      prv (atom nil)
-                      nxt (fn nxt [val]
-                            (when (not (.isDisposed e))
-                              (.dispose ^Disposable @dsp)
-                              (.onNext e val)
-                              (reset! prv val)
-                              (reset! dsp (.schedulePeriodicallyDirect scheduler #(.onNext e @prv) delay delay unit))))
-                      err (fn err [error]
-                            (.dispose ^Disposable @dsp)
-                            (.onError e error))
-                      com (fn com []
-                            (.dispose ^Disposable @dsp)
-                            (.onComplete e))]
-                (-> source (op/subscribe nxt err com))))]
-    (-> Observable (rx/create sub)))))
+(defn repeat-lastest-on-interval [src interval]
+  (let [dst (async/chan)]
+  (async/go-loop [frm (System/currentTimeMillis)
+                  prv nil]
+    (let [end (System/currentTimeMillis)
+          dif (- end frm)
+          nxt (async/alt!! src ([val] val) :default nil)]
+    (if (-> nxt (or (>= dif interval)))
+      (do (async/>!! dst nxt)
+          (recur end nxt))
+    (recur frm prv))))
+  (-> dst)))
 
 (defn has? [^Collection coll val]
   (.contains coll val))
 
-(defn add-vec [a b]
-  (mapv + a b))
-
-(defn in-range? [u l v]
-    (and (>= v u) (< v l)))
-
-(defn update-map [m k f & args]
-  (assoc m k (apply f (cons m args))))
+(defmacro add-vec [a b]
+  `(mapv + ~a ~b))

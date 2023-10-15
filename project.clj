@@ -4,10 +4,9 @@
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [org.clojars.vikasg7/rx-clojure "0.1.4-SNAPSHOT"]
+                 [org.clojure/core.async "1.6.681"]
                  [org.jline/jline-reader "3.20.0"]
                  [org.jline/jline-terminal-jansi "3.20.0"]
-                 [org.clojure/core.match "1.0.0"]
                  [org.clojure/tools.cli "1.0.206"]]
   :main ^:skip-aot clj-snake.core
   :target-path "target/%s"
