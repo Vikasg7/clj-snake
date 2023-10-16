@@ -10,6 +10,7 @@
       (.build)))
 
 (defn char-reader ^BindingReader [^Terminal terminal]
+  (. terminal enterRawMode)
   (BindingReader. (-> terminal .reader)))
 
 (def ^BindingReader key-reader (char-reader (terminal)))
@@ -17,20 +18,26 @@
 (defn poll-keys [dst]
   (async/go (while true
     (flush)
-    (async/>!! dst (-> key-reader .readCharacter char)))))
+    (async/>!! dst (-> key-reader .readCharacter char))))
+  (-> dst))
 
 (defn repeat-lastest-on-interval [src interval]
   (let [dst (async/chan)]
   (async/go-loop [frm (System/currentTimeMillis)
-                  prv nil]
+                  prv (async/<!! src)]
     (let [end (System/currentTimeMillis)
           dif (- end frm)
-          nxt (async/alt!! src ([val] val) :default nil)]
-    (if (-> nxt (or (>= dif interval)))
-      (do (async/>!! dst nxt)
-          (recur end nxt))
+          val (async/poll! src)]
+    (if (or (some? val) 
+            (>= dif interval))
+      (do (async/>!! dst (or val prv))
+          (recur end (or val prv)))
     (recur frm prv))))
   (-> dst)))
+
+(defn start-with [dst val]
+  (async/go (async/>! dst val))
+  (-> dst))
 
 (defn has? [^Collection coll val]
   (.contains coll val))

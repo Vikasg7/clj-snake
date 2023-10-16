@@ -7,7 +7,7 @@
 
 (set! *warn-on-reflection* true)
 
-(def offset
+(def direction
   {\w [-1 0]
    \a [0 -1]
    \s [1 0]
@@ -53,16 +53,16 @@
 (defn food [{:keys [food snake rows cols]}]
   (if (ate? food snake) (pick-rand-pos rows cols) food))
 
-(defn grow [{:keys [food snake key]}]
-  (let [nhead (util/add-vec (head snake) (offset key))
+(defn grow [{:keys [food snake]} direction]
+  (let [nhead (util/add-vec (head snake) direction)
         snake (cons nhead snake)
         ate?  (ate? food snake)]
   (cond ate?  snake
         :else (butlast snake))))
 
-(defn update-game [game]
+(defn move-snake [game direction]
   (assoc game
-    :snake (grow game)
+    :snake (grow game direction)
     :food  (food game)
     :over? (game-over? game)))
 
@@ -78,31 +78,24 @@
   {:rows  rows
    :cols  cols
    :snake (reverse [[0 0] [0 1] [0 2]]) ;; First element is snake head.
-   :key   \d
    :food  (pick-rand-pos rows cols)
    :over? false})
 
-(def WASD ^:const [\w \a \s \d])
+(def WASD ^:const #{\w \a \s \d})
 
 (defn snake-game [rows cols speed]
-  (let [keys-chan (async/chan)]
-  (async/go (util/poll-keys keys-chan))
-  (loop [game  (initial-state rows cols)
-         start (System/currentTimeMillis)]
+  (let [keys (-> (async/chan 1)
+                 (util/start-with \d)
+                 (util/poll-keys)
+                 (util/repeat-lastest-on-interval speed))]
+  (loop [game  (initial-state rows cols)]
     (when-not (:over? game)
       (print-frame game)
-      (let [now    (System/currentTimeMillis)
-            elapsd (- now start)
-            key    (async/alt!! keys-chan ([key] key) :default nil)
-            ngame (if (or (nil? key)
-                          (not (util/has? WASD key))
-                          (uturn? key (:key game)))
-                    game
-                  (assoc game :key key))]
-      (if (or (>= elapsd speed)
-              (some? key))
-        (recur (update-game ngame) now)
-      (recur ngame start)))))))
+      (let [key    (async/<!! keys)]
+      (if (or (not (WASD key))
+              (uturn? key (:key game)))
+        (recur game)
+      (recur (move-snake game (direction key)))))))))
 
 (defn run-game [{:keys [rows cols delay-in-ms]}]
   (snake-game rows cols delay-in-ms))
