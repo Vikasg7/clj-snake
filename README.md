@@ -1,5 +1,5 @@
 # clj-snake
-Functional approch to Snake Game in Clojure powered by [rx-clojure](https://github.com/Vikasg7/rx-clojure).  
+Functional appraoch to Snake Game in Clojure.  
 
 # Usage
 * Install [Leiningen](https://leiningen.org/)  
